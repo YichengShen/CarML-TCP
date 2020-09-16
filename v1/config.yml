@@ -1,2 +1,7 @@
 cloud_server:
-  host: "localhost"
+  port: 8888
+
+rsu:
+  port1: 60002
+  port2: 60006
+  port3: 60010

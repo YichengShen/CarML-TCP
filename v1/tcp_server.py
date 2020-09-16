@@ -1,51 +1,69 @@
-import socketserver
-import threading
-
-
-class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
-
-    def handle(self):
-        data = str(self.request.recv(1024), 'ascii')
-        cur_thread = threading.current_thread()
-        response = bytes("{}: {}".format(cur_thread.name, data), 'ascii')
-        self.request.sendall(response)
-
-class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-    pass
+import socket
+import sys
+from _thread import *
 
 
 class Server:
     """
-    TCP Server object.
-    Attributes:
-    - host
-    - port
+    TCP Server containing the following functions:
+    - run_server
     """
 
-    def __init__(self, host):
-        self.host = host
-        self.ip = host
-        self.port = 0 # arbitrary unused port
+    # Currently not working
+    # model cannot be updated
+    def __init__(self):
+        self.model = 0
 
-    def run_server(self):
-        server = ThreadedTCPServer((self.host, self.port), ThreadedTCPRequestHandler)
-        with server:
-            self.ip, self.port = server.server_address
+    def run_server(self, port):
+        HOST = socket.gethostname()	# Symbolic name meaning all available interfaces
+        PORT = port
 
-            # Start a thread with the server -- that thread will then start one
-            # more thread for each request
-            server_thread = threading.Thread(target=server.serve_forever)
-            # Exit the server thread when the main thread terminates
-            server_thread.daemon = True
-            server_thread.start()
-            print("Server loop running in thread:", server_thread.name)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print('Socket created')
+
+        #Bind socket to local host and port
+        try:
+            s.bind((HOST, PORT))
+        except socket.error as msg:
+            print('Bind failed. Error :', msg)
+            sys.exit()
+	
+        print('Socket bind complete')
+
+        #Start listening on socket
+        s.listen(10)
+        print('Socket now listening')
+
+        #Function for handling connections. This will be used to create threads
+        def clientthread(conn):
+            #infinite loop so that function do not terminate and thread do not end.
+            while True:
+                #Receiving from client
+                data = int.from_bytes(conn.recv(1024), byteorder='big')
+                if not data: 
+                    break
+
+                self.model += data
+                print('current model : ', self.model)
+            
+                conn.sendall(self.model.to_bytes(2, 'big'))
+            #came out of loop
+            conn.close()
+
+        #now keep talking with the client
+        while True:
+            #wait to accept a connection - blocking call
+            conn, addr = s.accept()
+            print('Connected with ' + addr[0] + ':' + str(addr[1]))
+            
+            #start new thread takes 1st argument as a function name to be run, second is the tuple of arguments to the function.
+            start_new_thread(clientthread, (conn,))
+
+        s.close()
 
 
 
 # Code for testing
 if __name__ == "__main__":
-    HOST = "localhost"
-
-    testing_server = Server(HOST)
-    testing_server.run_server()
+    Server.run_server(8888)
     

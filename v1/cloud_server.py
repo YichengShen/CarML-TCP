@@ -1,5 +1,9 @@
 import yaml
-import tcp_server
+import socket
+from _thread import *
+import sys
+
+# import tcp_server
 
 
 # Load configuration file
@@ -11,27 +15,64 @@ class Cloud_Server:
     """
     Cloud Server object.
     Attributes:
-    - rsu_list
     - model
     """
 
-    def __init__(self, model):
-        # self.rsu_list = rsu_list
-        self.model = model
+    def __init__(self):
+        self.model = 0
 
     def run_cloud_server(self):
-        host = cfg['cloud_server']['host']
-        cloud_server = tcp_server.Server(host)
-        cloud_server.run_server()
-        # After server ran, update ip and port
-        self.ip = cloud_server.ip
-        self.port = cloud_server.port
-        print("Cloud server starts on HOST: {}, PORT: {}".format(cloud_server.ip, 
-                                                                 cloud_server.port))
+        HOST = socket.gethostname()	# Symbolic name meaning all available interfaces
+        PORT = cfg['cloud_server']['port']
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print('Socket created')
+
+        #Bind socket to local host and port
+        try:
+            s.bind((HOST, PORT))
+        except socket.error as msg:
+            print('Bind failed. Error :', msg)
+            sys.exit()
+	
+        print('Socket bind complete')
+
+        #Start listening on socket
+        s.listen(10)
+        print('Socket now listening')
+        print("""Cloud server running on\n ---> HOST: {}, PORT: {}""".format(socket.gethostbyname(HOST), 
+                                                   PORT))
+
+        #Function for handling connections. This will be used to create threads
+        def clientthread(conn):
+            #infinite loop so that function do not terminate and thread do not end.
+            while True:
+                #Receiving from client
+                data = int.from_bytes(conn.recv(1024), byteorder='big')
+                if not data: 
+                    break
+
+                self.model += data
+                print('current model : ', self.model)
+            
+                conn.sendall(self.model.to_bytes(2, 'big'))
+            #came out of loop
+            conn.close()
+
+        #now keep talking with the client
+        while True:
+            #wait to accept a connection - blocking call
+            conn, addr = s.accept()
+            print('Connected with ' + addr[0] + ':' + str(addr[1]))
+            
+            #start new thread takes 1st argument as a function name to be run, second is the tuple of arguments to the function.
+            start_new_thread(clientthread, (conn,))
+
+        s.close()
+        
 
 
-
-# Code for testing
+# Run Cloud Server
 if __name__ == "__main__":
-    c = Cloud_Server([])
+    c = Cloud_Server()
     c.run_cloud_server()
