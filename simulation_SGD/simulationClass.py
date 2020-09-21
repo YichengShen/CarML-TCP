@@ -85,34 +85,34 @@ class Vehicle:
                 heapq.heappush(in_range_rsus, (distance, rsu))
         return [heapq.heappop(in_range_rsus)[1] for i in range(len(in_range_rsus))]
 
-    def download_from_rsu(self, rsu_list, central_server):
-        # If a car still holds data from previous epoch
-        if self.data_epoch != central_server.num_epoch:
-            self.rsu_assigned = None
-        if self.rsu_assigned is None:
-            for rsu in rsu_list:
-                if rsu.dataset:
-                    self.rsu_assigned = rsu
-                    rsu.vehicle_traffic += 1
-                    dataset = rsu.dataset.popleft()
-                    self.training_data_assigned = dataset[1][0]
-                    self.training_label_assigned = dataset[1][1]
-                    self.data_index = dataset[0]
-                    self.data_epoch = central_server.num_epoch
-                    self.data_length = len(self.training_label_assigned)
-                    self.model = rsu.model
-                    break
-        self.num_training_data_downloaded  += int(self.bandwidth)
-        self.num_training_label_downloaded += int(self.bandwidth)
+    # def download_from_rsu(self, rsu_list, central_server):
+    #     # If a car still holds data from previous epoch
+    #     if self.data_epoch != central_server.num_epoch:
+    #         self.rsu_assigned = None
+    #     if self.rsu_assigned is None:
+    #         for rsu in rsu_list:
+    #             if rsu.dataset:
+    #                 self.rsu_assigned = rsu
+    #                 rsu.vehicle_traffic += 1
+    #                 dataset = rsu.dataset.popleft()
+    #                 self.training_data_assigned = dataset[1][0]
+    #                 self.training_label_assigned = dataset[1][1]
+    #                 self.data_index = dataset[0]
+    #                 self.data_epoch = central_server.num_epoch
+    #                 self.data_length = len(self.training_label_assigned)
+    #                 self.model = rsu.model
+    #                 break
+    #     self.num_training_data_downloaded  += int(self.bandwidth)
+    #     self.num_training_label_downloaded += int(self.bandwidth)
 
-    def download_from_central_server(self):
-        self.num_training_data_downloaded  += int(self.bandwidth / 4)
-        self.num_training_label_downloaded += int(self.bandwidth / 4)
+    # def download_from_central_server(self, central_server):
+    #     self.num_training_data_downloaded  += int(self.bandwidth / 4)
+    #     self.num_training_label_downloaded += int(self.bandwidth / 4)
         
-    def download_completed(self):
-        if self.rsu_assigned is not None:
-            return self.num_training_data_downloaded >= self.data_length
-        return False
+    # def download_completed(self):
+    #     if self.rsu_assigned is not None:
+    #         return self.num_training_data_downloaded >= self.data_length
+    #     return False
 
     def download_model_from(self, central_server):
         self.model = central_server.model
@@ -209,45 +209,45 @@ class Vehicle:
             return not self.car_id in id_set
 
     # Return a list of all the vehicles within the range of the vehicle
-    def in_range_vehicle(self, timestep):
-        vehicles_in_range = []
-        for vehicle in timestep.findall('vehicle'):
-            distance = math.sqrt((float(vehicle.attrib['x']) - self.x) ** 2 + (float(vehicle.attrib['y']) - self.y) ** 2)
-            if distance <= cfg['comm_range']['v2v']:
-                vehicles_in_range.append(vehicle)
-        return vehicles_in_range
+    # def in_range_vehicle(self, timestep):
+    #     vehicles_in_range = []
+    #     for vehicle in timestep.findall('vehicle'):
+    #         distance = math.sqrt((float(vehicle.attrib['x']) - self.x) ** 2 + (float(vehicle.attrib['y']) - self.y) ** 2)
+    #         if distance <= cfg['comm_range']['v2v']:
+    #             vehicles_in_range.append(vehicle)
+    #     return vehicles_in_range
 
     # Transfer all training data and labels to one near-by vehicle
-    def transfer_data_to_vehicle(self, simulation, timestep):
-        vehicles_in_range = self.in_range_vehicle(timestep)
-        for vehicle in vehicles_in_range:
-            if vehicle.attrib['id'] not in simulation.vehicle_dict:
-                simulation.add_into_vehicle_dict(vehicle)
-                vehi = simulation.vehicle_dict[vehicle.attrib['id']]
-                vehi.training_data_assigned = self.training_data_assigned
-                vehi.num_training_data_downloaded = self.num_training_data_downloaded
-                vehi.training_label_assigned = self.training_label_assigned
-                vehi.num_training_label_downloaded = self.num_training_label_downloaded
-                vehi.rsu_assigned = self.rsu_assigned
-                vehi.model = self.model
-                vehi.data_index = self.data_index
-                vehi.data_epoch = self.data_epoch
-                vehi.gradients_index = self.gradients_index
-                return True
-            elif not simulation.vehicle_dict[vehicle.attrib['id']].training_data_assigned:
-                vehi = simulation.vehicle_dict[vehicle.attrib['id']]
-                vehi = simulation.vehicle_dict[vehicle.attrib['id']]
-                vehi.training_data_assigned = self.training_data_assigned
-                vehi.num_training_data_downloaded = self.num_training_data_downloaded
-                vehi.training_label_assigned = self.training_label_assigned
-                vehi.num_training_label_downloaded = self.num_training_label_downloaded
-                vehi.rsu_assigned = self.rsu_assigned
-                vehi.model = self.model
-                vehi.data_index = self.data_index
-                vehi.data_epoch = self.data_epoch
-                vehi.gradients_index = self.gradients_index
-                return True
-        return False
+    # def transfer_data_to_vehicle(self, simulation, timestep):
+    #     vehicles_in_range = self.in_range_vehicle(timestep)
+    #     for vehicle in vehicles_in_range:
+    #         if vehicle.attrib['id'] not in simulation.vehicle_dict:
+    #             simulation.add_into_vehicle_dict(vehicle)
+    #             vehi = simulation.vehicle_dict[vehicle.attrib['id']]
+    #             vehi.training_data_assigned = self.training_data_assigned
+    #             vehi.num_training_data_downloaded = self.num_training_data_downloaded
+    #             vehi.training_label_assigned = self.training_label_assigned
+    #             vehi.num_training_label_downloaded = self.num_training_label_downloaded
+    #             vehi.rsu_assigned = self.rsu_assigned
+    #             vehi.model = self.model
+    #             vehi.data_index = self.data_index
+    #             vehi.data_epoch = self.data_epoch
+    #             vehi.gradients_index = self.gradients_index
+    #             return True
+    #         elif not simulation.vehicle_dict[vehicle.attrib['id']].training_data_assigned:
+    #             vehi = simulation.vehicle_dict[vehicle.attrib['id']]
+    #             vehi = simulation.vehicle_dict[vehicle.attrib['id']]
+    #             vehi.training_data_assigned = self.training_data_assigned
+    #             vehi.num_training_data_downloaded = self.num_training_data_downloaded
+    #             vehi.training_label_assigned = self.training_label_assigned
+    #             vehi.num_training_label_downloaded = self.num_training_label_downloaded
+    #             vehi.rsu_assigned = self.rsu_assigned
+    #             vehi.model = self.model
+    #             vehi.data_index = self.data_index
+    #             vehi.data_epoch = self.data_epoch
+    #             vehi.gradients_index = self.gradients_index
+    #             return True
+    #     return False
 
     # Give assigned data and label back to RSU if the car is about to exit
     def transfer_data_to_rsu(self, cloest_rsu):
@@ -325,8 +325,8 @@ class RSU:
         self.vehicle_traffic = 0
         self.traffic_proportion = traffic_proportion
 
-    def low_on_data(self):
-        return len(self.dataset) < 10
+    # def low_on_data(self):
+    #     return len(self.dataset) < 10
 
     # Check if the RSU has received the specified amount of gradients
     def max_gradients_accumulated(self):
@@ -422,32 +422,32 @@ class Central_Server:
         self.received_data = set()
 
     # Initially distribute 1/4 of the data to each RSU
-    def distribute_to_rsu(self):
-        for rsu in self.rsu_list:
-            initial_distribution = int(0.25 * self.num_mini_batches * rsu.traffic_proportion)+1
-            data = self.train_dataset[:initial_distribution]
-            indexs = set(map(lambda x: x[0], data))
-            rsu.dataset = deque(data)
-            self.assigned_data |= indexs
-            rsu.model = self.model
-            del self.train_dataset[:initial_distribution]
+    # def distribute_to_rsu(self):
+    #     for rsu in self.rsu_list:
+    #         initial_distribution = int(0.25 * self.num_mini_batches * rsu.traffic_proportion)+1
+    #         data = self.train_dataset[:initial_distribution]
+    #         indexs = set(map(lambda x: x[0], data))
+    #         rsu.dataset = deque(data)
+    #         self.assigned_data |= indexs
+    #         rsu.model = self.model
+    #         del self.train_dataset[:initial_distribution]
     
     # Redistribute part of the data to RSU when the RSU is running low on data
-    def redistribute_to_rsu(self, rsu):
-        num_redistributed = int(0.25 * self.num_mini_batches * rsu.traffic_proportion)
-        if self.train_dataset:
-            data = self.train_dataset[:num_redistributed]
-            indexs = set(map(lambda x: x[0], data))
-            rsu.dataset.extend(data)
-            self.assigned_data |= indexs
-            del self.train_dataset[:num_redistributed]
-            if len(indexs) >= num_redistributed:
-                return
-            else:
-                num_redistributed -= len(indexs)
-        if self.assigned_data:
-            for _ in range(num_redistributed):
-                rsu.dataset.append(self.train_dataset_index[random.choice(tuple(self.assigned_data))])
+    # def redistribute_to_rsu(self, rsu):
+    #     num_redistributed = int(0.25 * self.num_mini_batches * rsu.traffic_proportion)
+    #     if self.train_dataset:
+    #         data = self.train_dataset[:num_redistributed]
+    #         indexs = set(map(lambda x: x[0], data))
+    #         rsu.dataset.extend(data)
+    #         self.assigned_data |= indexs
+    #         del self.train_dataset[:num_redistributed]
+    #         if len(indexs) >= num_redistributed:
+    #             return
+    #         else:
+    #             num_redistributed -= len(indexs)
+    #     if self.assigned_data:
+    #         for _ in range(num_redistributed):
+    #             rsu.dataset.append(self.train_dataset_index[random.choice(tuple(self.assigned_data))])
 
     def epoch_completed(self):
         return len(self.received_data) == self.num_mini_batches

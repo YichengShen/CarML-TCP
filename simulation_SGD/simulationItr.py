@@ -2,36 +2,35 @@ import random
 from simulationClass import *
 from  locationPicker_v3 import output_junctions
 import xml.etree.ElementTree as ET 
+import tensorflow as tf
 
 def simulate(simulation):
     simulation.central_server.new_epoch()
     tree = ET.parse(simulation.FCD_file)
     root = tree.getroot()
 
+    train, test = tf.keras.datasets.cifar10.load_data()
 
-    # For each time step (sec) in the FCD file 
-    for timestep in root:
+    # Normalize the training data to fit the model
+    train_images, train_labels = train
+    num_training_data = cfg['simulation']['num_training_data']
+    train_images, train_labels = train_images[:num_training_data], train_labels[:num_training_data]
+    train_images = train_images.reshape(train_images.shape[0], 1024)
+    train_images = train_images/255
 
-        # print(simulation.central_server.gradients_received)
+    # Normalize the testing data to fit the model
+    test_images, test_labels = test
+    test_images, test_labels = test_images, test_labels
+    test_images = test_images.reshape(test_images.shape[0], 1024)
+    test_images = test_images/255
 
-        # Maximum training epochs
-        if simulation.central_server.num_epoch <= cfg['neural_network']['epoch']:
-            # Calculate in-real-time RSU traffic every 10 minutes
-            if timestep.attrib['time'] != '0.00' and float(timestep.attrib['time']) % 600 == 0:
-                total_traffic = sum(map(lambda x: x.vehicle_traffic, simulation.rsu_list))
-                for rsu in simulation.rsu_list:
-                    rsu.traffic_proportion = rsu.vehicle_traffic / total_traffic
-                    rsu.vehicle_traffic = 0
-
-            for rsu in simulation.rsu_list:
-                # Redistribute data from central server to RSU if RSU is about to run out of data
-                if rsu.low_on_data():
-                    simulation.central_server.redistribute_to_rsu(rsu)
-                # Update the central server model and obtain the latest model when an RSU has accumulated
-                # a centrain number of gradients
-                if rsu.max_gradients_accumulated() or rsu.dataset_empty():
-                    rsu.communicate_with_central_server(simulation.central_server)
-
+    batch_size = cfg['neural_network']['batch_size']
+    training_set = tf.data.Dataset.from_tensor_slices((train_images, train_labels)).shuffle(int(num_training_data/batch_size)).batch(batch_size)
+    
+    # Maximum training epochs
+    while simulation.central_server.num_epoch <= cfg['neural_network']['epoch']:
+        # For each time step (sec) in the FCD file 
+        for timestep in root:
             # When each epoch is completed, print accuracy of each epoch
             if simulation.central_server.epoch_completed():
                 simulation.central_server.update_model()
@@ -50,42 +49,43 @@ def simulate(simulation):
                                     float(vehicle.attrib['y']),
                                     float(vehicle.attrib['speed']))
                 
-                # Chance for the vehicle to have malfunction
-                if random.random() < cfg['vehicle']['failure_rate']:
-                    vehi.malfunction = True
-                if vehi.malfunction:
-                    continue
+                # # Chance for the vehicle to have malfunction
+                # if random.random() < cfg['vehicle']['failure_rate']:
+                #     vehi.malfunction = True
+                # if vehi.malfunction:
+                #     continue
 
-                # Download if not finished downloading
-                if not vehi.download_completed():
-                    rsus_in_range = vehi.in_range_rsus(simulation.rsu_list)
-                    # Download from RSU if in range of RSU
-                    if vehi.rsu_assigned is None or vehi.rsu_assigned in rsus_in_range:
-                        vehi.download_from_rsu(rsus_in_range, simulation.central_server)
-                    # Download from the central server if not in range of RSU
+                # # Download if not finished downloading
+                # if not vehi.download_completed():
+                #     rsus_in_range = vehi.in_range_rsus(simulation.rsu_list)
+                #     # Download from RSU if in range of RSU
+                #     if vehi.rsu_assigned is None or vehi.rsu_assigned in rsus_in_range:
+                #         vehi.download_from_rsu(rsus_in_range, simulation.central_server)
+                #     # Download from the central server if not in range of RSU
+                #     else:
+                #         vehi.download_from_central_server()
+                # # If finished downloading
+                # else:
+                # If the vehicle is still computing
+                vehi.download_model_from(simulation.central_server)
+                if not vehi.locked():
+                    # Compute the gradients using the latest model
+                    if not vehi.compute_completed():
+                        # update=True -> compute from central server
+                        # update=False -> compute from RSU
+                        vehi.compute_gradients(simulation.central_server, update=True, bounded=False)
+                    # If finished computing
                     else:
-                        vehi.download_from_central_server()
-                # If finished downloading
-                else:
-                    # If the vehicle is still computing
-                    if not vehi.locked():
-                        # Compute the gradients using the latest model
-                        if not vehi.compute_completed():
-                            # update=True -> compute from central server
-                            # update=False -> compute from RSU
-                            vehi.compute_gradients(simulation.central_server, update=True, bounded=False)
-                        # If finished computing
+                        # Upload the gradients if not finished uploading
+                        if not vehi.upload_completed():
+                            # One needs to be commented out
+                            vehi.upload_gradients_to_central_server(simulation.central_server, update=True, bounded=False)
+                            # vehi.upload_gradients_to_rsu(simulation.rsu_list, simulation.central_server)
                         else:
-                            # Upload the gradients if not finished uploading
-                            if not vehi.upload_completed():
-                                # One needs to be commented out
-                                vehi.upload_gradients_to_central_server(simulation.central_server, update=True, bounded=False)
-                                # vehi.upload_gradients_to_rsu(simulation.rsu_list, simulation.central_server)
-                            else:
-                                vehi.free_up()
-                    # If locked, lock -1 in every time step
-                    else:
-                        vehi.update_lock()
+                            vehi.free_up()
+                # If locked, lock -1 in every time step
+                else:
+                    vehi.update_lock()
                 # If the vehicle is about to exit the map(city), transfer its data to either
                 # nearby vehicles, RSUs, or the central server
                 if vehi.out_of_bounds(root, timestep) and not vehi.upload_completed():
