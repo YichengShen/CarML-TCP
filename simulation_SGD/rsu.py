@@ -28,7 +28,7 @@ class RSU:
         #CGC
 
         accumulative_gradients = neural_network.accumulate_gradients_itr(grads)
-        accumulative_gradients = np.true_divide(accumulative_gradients, len(grads))
+        # accumulative_gradients = np.true_divide(accumulative_gradients, len(grads))
         central_server.accumulative_gradients.append(accumulative_gradients)
 
     # The RSU updates the model in the central server with its accumulative gradients and downloads the 

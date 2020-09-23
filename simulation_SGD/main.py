@@ -42,8 +42,8 @@ def simulate(simulation):
                 if simulation.training_data:
                     vehi.training_data_assigned, vehi.training_label_assigned = simulation.training_data.pop()
                 else:
-                    simulation.new_epoch()
                     simulation.print_accuracy()
+                    simulation.new_epoch()
                     vehi.training_data_assigned, vehi.training_label_assigned = simulation.training_data.pop()
                 
                 # Download Model
@@ -76,24 +76,25 @@ def main():
     train_images, train_labels = train
     num_training_data = cfg['simulation']['num_training_data']
     train_images, train_labels = train_images[:num_training_data], train_labels[:num_training_data]
-    train_images = train_images.reshape(train_images.shape[0], 3, 1024)
+    train_images = train_images.reshape(train_images.shape[0], 32, 32, 3)
     train_images = train_images/255
 
     # Normalize the testing data to fit the model
     test_images, test_labels = test
     test_images, test_labels = test_images, test_labels
-    test_images = test_images.reshape(test_images.shape[0], 3, 1024)
+    test_images = test_images.reshape(test_images.shape[0], 32, 32, 3)
     test_images = test_images/255
 
     batch_size = cfg['neural_network']['batch_size']
     training_set = tf.data.Dataset.from_tensor_slices((train_images, train_labels)).shuffle(int(num_training_data/batch_size)).batch(batch_size)
+    test_dataset = tf.data.Dataset.from_tensor_slices((test_images, test_labels)).batch(batch_size)
 
     simulation = Simulation(FCD_FILE, vehicle_dict, rsu_list, central_server, training_set)
     model = simulate(simulation)
 
     # Test the accuracy of the computed model
     test_accuracy = tf.keras.metrics.Accuracy()     
-    for (x, y) in test:
+    for (x, y) in test_dataset:
         logits = model(x, training=False) 
         prediction = tf.argmax(logits, axis=1, output_type=tf.int32)
         test_accuracy(prediction, y)
