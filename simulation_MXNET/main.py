@@ -2,7 +2,6 @@ from sumo import SUMO_Dataset
 from central_server import Central_Server, Simulation
 from vehicle import Vehicle
 
-import random
 import yaml
 # from locationPicker_v3 import output_junctions
 import xml.etree.ElementTree as ET 
@@ -57,7 +56,7 @@ def simulate(simulation):
                 if simulation.training_data:
                     vehi.training_data_assigned, vehi.training_label_assigned = simulation.training_data.pop()
                 else:
-                    # simulation.print_accuracy()
+                    simulation.print_accuracy()
                     simulation.new_epoch()
                     vehi.training_data_assigned, vehi.training_label_assigned = simulation.training_data.pop()
                 

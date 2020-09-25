@@ -98,20 +98,18 @@ class Simulation:
         for i, (data, label) in enumerate(self.val_test_data):
             outputs = self.central_server.net(data)
             self.epoch_accuracy.update(label, outputs)
-        # # cross entropy on training data
-        # for i, (data, label) in enumerate(self.val_train_data):
-        #     outputs = self.central_server.net(data)
-        #     self.epoch_loss.update(label, nd.softmax(outputs))
+        # cross entropy on training data
+        for i, (data, label) in enumerate(self.val_train_data):
+            outputs = self.central_server.net(data)
+            self.epoch_loss.update(label, nd.softmax(outputs))
 
         _, accu = self.epoch_accuracy.get()
-        # _, loss = self.epoch_loss.get()
-        loss = 0
+        _, loss = self.epoch_loss.get()
+        # loss = 0
         print("Epoch {:03d}: Loss: {:03f}, Accuracy: {:03f}".format(self.num_epoch,
                                                                     loss,
                                                                     accu))
                                                                 
-
-
     def new_epoch(self):
         self.num_epoch += 1
         for i, (data, label) in enumerate(self.training_set):

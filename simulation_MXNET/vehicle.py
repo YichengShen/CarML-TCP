@@ -56,11 +56,11 @@ class Vehicle:
             if param.grad_req != 'null':
                 grad_collect.append(param.grad().copy())
         self.gradients = grad_collect
-        return grad_collect
 
     def upload(self, simulation):
         rsu = random.choice(simulation.rsu_list)
         rsu.accumulative_gradients.append(self.gradients)
+        # print(self.gradients)
         # RSU checks if enough gradients collected
         if len(rsu.accumulative_gradients) >= cfg['simulation']['maximum_rsu_accumulative_gradients']:
             rsu.agg(rsu.accumulative_gradients, simulation.central_server.net, cfg['neural_network']['learning_rate'])

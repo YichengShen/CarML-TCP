@@ -24,7 +24,8 @@ class Neural_Network:
     # The loss function
     def loss(self, output, label):
         loss_object = gluon.loss.SoftmaxCrossEntropyLoss()
-        return loss_object(output, label)
+        loss = loss_object(output, label)
+        return loss
     
     # Gradients and loss
     def grad(self, model, inputs, targets, simulation):
