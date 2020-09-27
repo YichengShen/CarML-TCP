@@ -63,7 +63,8 @@ class Central_Server:
                 if param.grad_req != 'null':
                     # mapping back to the collection of ndarray
                     # directly update model
-                    param.set_data(param.data() - cfg['neural_network']['learning_rate'] * mean_nd[idx:(idx+param.data().size)].reshape(param.data().shape))
+                    lr = cfg['neural_network']['learning_rate']
+                    param.set_data(param.data() - lr * mean_nd[idx:(idx+param.data().size)].reshape(param.data().shape))
                     idx += param.data().size
             self.accumulative_gradients = []
 
@@ -94,12 +95,13 @@ class Simulation:
         self.vehicle_dict[vehicle.attrib['id']] = Vehicle(vehicle.attrib['id'])
 
     def print_accuracy(self):
-        print("start")
         self.epoch_accuracy.reset()
         self.epoch_loss.reset()
+        print("start")
         # accuracy on testing data
         for i, (data, label) in enumerate(self.val_test_data):
             outputs = self.central_server.net(data)
+            # this following line takes EXTREMELY LONG to run
             self.epoch_accuracy.update(label, outputs)
         # cross entropy on training data
         for i, (data, label) in enumerate(self.val_train_data):
@@ -109,6 +111,7 @@ class Simulation:
         _, accu = self.epoch_accuracy.get()
         _, loss = self.epoch_loss.get()
         # loss = 0
+        # accu = 0
         print("Epoch {:03d}: Loss: {:03f}, Accuracy: {:03f}".format(self.num_epoch,
                                                                     loss,
                                                                     accu))

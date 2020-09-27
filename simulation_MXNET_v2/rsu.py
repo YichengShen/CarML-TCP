@@ -24,7 +24,8 @@ class RSU:
         self.accumulative_gradients = []
 
     def aggregate(self, net, grad_list):
-        return nd_aggregation.simple_mean(grad_list, net, cfg['neural_network']['learning_rate'])
+        # return nd_aggregation.cgc_filter(grad_list, net, 2)
+        return nd_aggregation.simple_mean_filter(grad_list, net)
         
 
     # The RSU updates the model in the central server with its accumulative gradients and downloads the 

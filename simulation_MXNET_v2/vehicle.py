@@ -55,6 +55,10 @@ class Vehicle:
             if param.grad_req != 'null':
                 grad_collect.append(param.grad().copy())
         self.gradients = grad_collect
+        # print(self.gradients)
+        # print(len(self.gradients))
+        # for i in range(len(self.gradients)):
+        #     print(len(self.gradients[i]))
 
     def upload(self, simulation):
         rsu = random.choice(simulation.rsu_list)
