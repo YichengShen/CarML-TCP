@@ -1,0 +1,125 @@
+from sumo import SUMO_Dataset
+from central_server import Central_Server, Simulation
+from vehicle import Vehicle
+
+import yaml
+# from locationPicker_v3 import output_junctions
+import xml.etree.ElementTree as ET 
+
+import mxnet as mx
+from mxnet import nd, autograd, gluon
+from mxnet.gluon.data.vision import transforms
+from gluoncv.data import transforms as gcv_transforms
+import numpy as np
+import time, random, argparse, itertools
+
+random.seed(100)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Train a model for image classification.')
+    parser.add_argument('--num-gpus', type=int, default=0,
+                        help='number of gpus to use.')
+    opt = parser.parse_args()
+    return opt
+
+import sys
+print(' '.join(sys.argv))
+
+file = open('config.yml', 'r')
+cfg = yaml.load(file, Loader=yaml.FullLoader)
+
+def simulate(simulation):
+    tree = ET.parse(simulation.FCD_file)
+    root = tree.getroot()
+    simulation.new_epoch()
+    
+    # Maximum training epochs
+    while simulation.num_epoch <= cfg['neural_network']['epoch']:
+        # For each time step (sec) in the FCD file 
+        for timestep in root:
+
+            if simulation.num_epoch > cfg['neural_network']['epoch']:
+                break
+
+            # For each vehicle on the map at the timestep
+            for vehicle in timestep.findall('vehicle'):
+                # If vehicle not yet stored in vehicle_dict
+                if vehicle.attrib['id'] not in simulation.vehicle_dict:
+                    simulation.add_into_vehicle_dict(vehicle)
+                # Get the vehicle object from vehicle_dict
+                vehi = simulation.vehicle_dict[vehicle.attrib['id']]  
+                # Set location and speed
+                vehi.set_properties(float(vehicle.attrib['x']),
+                                    float(vehicle.attrib['y']),
+                                    float(vehicle.attrib['speed']))
+
+                # Download Training Data / New Epoch
+                if simulation.training_data:
+                    vehi.training_data_assigned, vehi.training_label_assigned = simulation.training_data.pop()
+                else:
+                    simulation.print_accuracy()
+                    simulation.new_epoch()
+                    vehi.training_data_assigned, vehi.training_label_assigned = simulation.training_data.pop()
+                
+                # Download Model
+                vehi.download_model_from(simulation.central_server)
+
+                vehi.compute_and_upload(simulation)
+                
+    return simulation.central_server.model
+
+
+def main():
+    opt = parse_args()
+
+    num_gpus = opt.num_gpus
+    context = [mx.gpu(i) for i in range(num_gpus)] if num_gpus > 0 else [mx.cpu()]
+
+    ROU_FILE = cfg['simulation']['ROU_FILE']
+    NET_FILE = cfg['simulation']['NET_FILE']
+    FCD_FILE = cfg['simulation']['FCD_FILE']
+    
+    RSU_RANGE = cfg['comm_range']['v2rsu']           # range of RSU
+    NUM_RSU = cfg['simulation']['num_rsu']           # number of RSU
+
+    sumo_data = SUMO_Dataset(ROU_FILE, NET_FILE)
+    vehicle_dict = {}
+    # rsu_list = sumo_data.rsuList(RSU_RANGE, NUM_RSU, output_junctions)
+    rsu_list = sumo_data.rsuList_random(RSU_RANGE, NUM_RSU)
+    central_server = Central_Server(context, rsu_list)
+
+
+    # def transform(data, label):
+    #     data = mx.nd.transpose(data, (2,0,1))
+    #     data = data.astype(np.float32) / 255
+    #     return data, label
+
+    def transform(data, label):
+        data = data.astype('float32')/255
+        return data, label
+
+    # Load Data
+    batch_size = cfg['neural_network']['batch_size']
+    train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.MNIST('../data/mnist', train=True, transform=transform),
+                            batch_size, shuffle=True, last_batch='discard')
+    val_train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.MNIST('../data/mnist', train=True, transform=transform),
+                                batch_size, shuffle=False, last_batch='keep')
+    val_test_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.MNIST('../data/mnist', train=False, transform=transform),
+                                batch_size, shuffle=False, last_batch='keep')
+
+
+    simulation = Simulation(FCD_FILE, vehicle_dict, rsu_list, central_server, train_data, val_train_data, val_test_data)
+    model = simulate(simulation)
+
+    # # Test the accuracy of the computed model
+    # test_accuracy = tf.keras.metrics.Accuracy()     
+    # for (x, y) in test_dataset:
+    #     logits = model(x, training=False) 
+    #     prediction = tf.argmax(logits, axis=1, output_type=tf.int32)
+    #     test_accuracy(prediction, y)
+    # print("Test set accuracy: {:.3%}".format(test_accuracy.result()))
+
+
+if __name__ == '__main__':
+    main()
