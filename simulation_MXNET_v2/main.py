@@ -52,18 +52,20 @@ def simulate(simulation):
                                     float(vehicle.attrib['y']),
                                     float(vehicle.attrib['speed']))
 
-                # Download Training Data / New Epoch
-                if simulation.training_data:
-                    vehi.training_data_assigned, vehi.training_label_assigned = simulation.training_data.pop()
-                else:
-                    simulation.print_accuracy()
-                    simulation.new_epoch()
-                    vehi.training_data_assigned, vehi.training_label_assigned = simulation.training_data.pop()
+                closest_rsu = vehi.closest_rsu(simulation.rsu_list)
+                if closest_rsu is not None:
+                    # Download Training Data / New Epoch
+                    if simulation.training_data:
+                        vehi.training_data_assigned, vehi.training_label_assigned = simulation.training_data.pop()
+                    else:
+                        simulation.print_accuracy()
+                        simulation.new_epoch()
+                        vehi.training_data_assigned, vehi.training_label_assigned = simulation.training_data.pop()
                 
-                # Download Model
-                vehi.download_model_from(simulation.central_server)
+                    # Download Model
+                    vehi.download_model_from(simulation.central_server)
 
-                vehi.compute_and_upload(simulation)
+                    vehi.compute_and_upload(simulation, closest_rsu)
                 
     return simulation.central_server.model
 

@@ -18,21 +18,46 @@ def simple_mean_filter(gradients, net):
             idx += param.data().size
     return grad_collect
 
+def multiply_norms(gradients, f):
+    euclidean_distance = []
+    for i, x in enumerate(gradients):
+        norms = [nd.norm(p) for p in x]
+        norm_product = 1
+        for each in norms:
+            norm_product *= float(each.asnumpy()[0])
+        euclidean_distance.append((i, norm_product))
+    # euclidean_distance = sorted(euclidean_distance, key=lambda x: x[1], reverse=True)
+    # output = []
+    # for i in range(f, len(gradients)):
+    #     output.append(gradients[euclidean_distance[i][0]])
+    output = [gradients[x[0]] for x in sorted(euclidean_distance, key=lambda x: x[1], reverse=True)[f:]]
+    return output
+
+def cgc_by_layer(gradients, f):
+    layer_list = []
+    for layer in range(len(gradients[0])):
+        grads = [x[layer] for x in gradients]
+        norms = [nd.norm(p) for p in grads]
+        euclidean_distance = [(i, norms[i]) for i in range(len(grads))]
+        layer_output = [grads[x[0]] for x in sorted(euclidean_distance, key=lambda x: x[1], reverse=True)[f:]]
+        layer_list.append(layer_output)
+
+    output = []
+    for i in range(len(gradients) - f):
+        grad = []
+        for layer in range(len(gradients[0])):
+            grad.append(layer_list[layer][i])
+        output.append(grad)
+    return output
 
 def cgc_filter(gradients, net, f):
     """not finished"""
-    euclidean_distance = []
-    for i, x in enumerate(gradients):
-        print(i)
-        # euclidean_distance.append((i, nd.norm(nd.array(x))))
-        euclidean_distance.append((i, np.linalg.norm(x)))
-    gradients = [gradients[x[0]] for x in sorted(euclidean_distance, key=lambda x: x[1], reverse=True)[f:]]
-
-    # print(len(gradients))
+    # output = cgc_by_layer(gradients, f)
+    output = multiply_norms(gradients, f)
 
     # X is a 2d list of nd array
-    param_list = [nd.concat(*[xx.reshape((-1, 1)) for xx in x], dim=0) for x in gradients]
-    mean_nd = nd.sum(nd.concat(*param_list, dim=1), axis=-1)
+    param_list = [nd.concat(*[xx.reshape((-1, 1)) for xx in x], dim=0) for x in output]
+    mean_nd = nd.mean(nd.concat(*param_list, dim=1), axis=-1)
     grad_collect = []
     idx = 0
     for j, (param) in enumerate(net.collect_params().values()):

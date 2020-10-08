@@ -35,5 +35,5 @@ simulation:
 
 neural_network:
   batch_size: 100
-  epoch: 10
+  epoch: 100
   learning_rate: 0.0005

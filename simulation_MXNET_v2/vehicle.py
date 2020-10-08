@@ -1,7 +1,9 @@
+import math
 from neural_network import Neural_Network
 import random
 import numpy as np
 import yaml
+import heapq
 
 import mxnet as mx
 from mxnet import nd, autograd, gluon
@@ -60,36 +62,36 @@ class Vehicle:
         # for i in range(len(self.gradients)):
         #     print(len(self.gradients[i]))
 
-    def upload(self, simulation):
-        rsu = random.choice(simulation.rsu_list)
+    def upload(self, simulation, closest_rsu):
+        rsu = closest_rsu
         rsu.accumulative_gradients.append(self.gradients)
         # RSU checks if enough gradients collected
         if len(rsu.accumulative_gradients) >= cfg['simulation']['maximum_rsu_accumulative_gradients']:
             rsu.communicate_with_central_server(simulation.central_server)
 
-    def compute_and_upload(self, simulation):
+    def compute_and_upload(self, simulation, closest_rsu):
         self.compute(simulation)
-        self.upload(simulation)
+        self.upload(simulation, closest_rsu)
 
 
     
-    # # Return the RSU that is cloest to the vehicle
-    # def closest_rsu(self, rsu_list):
-    #     shortest_distance = 99999999 # placeholder (a random large number)
-    #     closest_rsu = None
-    #     for rsu in rsu_list:
-    #         distance = math.sqrt((rsu.rsu_x - self.x) ** 2 + (rsu.rsu_y - self.y) ** 2)
-    #         if distance <= rsu.rsu_range and distance < shortest_distance:
-    #             shortest_distance = distance
-    #             closest_rsu = rsu
-    #     return closest_rsu
+    # Return the RSU that is cloest to the vehicle
+    def closest_rsu(self, rsu_list):
+        shortest_distance = 99999999 # placeholder (a random large number)
+        closest_rsu = None
+        for rsu in rsu_list:
+            distance = math.sqrt((rsu.rsu_x - self.x) ** 2 + (rsu.rsu_y - self.y) ** 2)
+            if distance <= rsu.rsu_range and distance < shortest_distance:
+                shortest_distance = distance
+                closest_rsu = rsu
+        return closest_rsu
 
-    # # Return a list of RSUs that is within the range of the vehicle
-    # # with each RSU being sorted from the closest to the furtherst
-    # def in_range_rsus(self, rsu_list):
-    #     in_range_rsus = []
-    #     for rsu in rsu_list:
-    #         distance = math.sqrt((rsu.rsu_x - self.x) ** 2 + (rsu.rsu_y - self.y) ** 2)
-    #         if distance <= rsu.rsu_range:
-    #             heapq.heappush(in_range_rsus, (distance, rsu))
-    #     return [heapq.heappop(in_range_rsus)[1] for i in range(len(in_range_rsus))]
+    # Return a list of RSUs that is within the range of the vehicle
+    # with each RSU being sorted from the closest to the furtherst
+    def in_range_rsus(self, rsu_list):
+        in_range_rsus = []
+        for rsu in rsu_list:
+            distance = math.sqrt((rsu.rsu_x - self.x) ** 2 + (rsu.rsu_y - self.y) ** 2)
+            if distance <= rsu.rsu_range:
+                heapq.heappush(in_range_rsus, (distance, rsu))
+        return [heapq.heappop(in_range_rsus)[1] for i in range(len(in_range_rsus))]
