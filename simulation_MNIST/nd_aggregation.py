@@ -37,7 +37,7 @@ def cgc_filter(gradients, net, f):
 
     # X is a 2d list of nd array
     param_list = [nd.concat(*[xx.reshape((-1, 1)) for xx in x], dim=0) for x in output]
-    mean_nd = nd.sum(nd.concat(*param_list, dim=1), axis=-1)
+    mean_nd = nd.mean(nd.concat(*param_list, dim=1), axis=-1)
     grad_collect = []
     idx = 0
     for j, (param) in enumerate(net.collect_params().values()):

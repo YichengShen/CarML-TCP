@@ -40,7 +40,7 @@ class RSU:
     # The RSU updates the model in the central server with its accumulative gradients and downloads the 
     # latest model from the central server
     def communicate_with_central_server(self, central_server):
-        # self.attack()
+        self.attack()
         aggre_gradients = self.aggregate(central_server.net, self.accumulative_gradients)
         self.accumulative_gradients = []
         central_server.accumulative_gradients.append(aggre_gradients)
