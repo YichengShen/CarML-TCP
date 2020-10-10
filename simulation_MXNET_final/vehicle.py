@@ -12,6 +12,9 @@ from mxnet import nd, autograd, gluon
 file = open('config.yml', 'r')
 cfg = yaml.load(file, Loader=yaml.FullLoader)
 
+random.seed(cfg['seed'])
+np.random.seed(cfg['seed'])
+
 class Vehicle:
     """
     Vehicle object for Car ML Simulator.
@@ -45,11 +48,14 @@ class Vehicle:
     def download_model_from(self, central_server):
         self.net = central_server.net
 
-    def compute(self, simulation):
+    def compute(self, simulation, closest_rsu):
         neural_net = Neural_Network()
         with autograd.record():
             output = self.net(self.training_data_assigned)
-            loss = neural_net.loss(output, self.training_label_assigned)
+            if cfg['attack'] == 'label' and len(closest_rsu.accumulative_gradients) < cfg['num_faulty_grads']:
+                loss = neural_net.loss(output, 9 - self.training_label_assigned)
+            else:
+                loss = neural_net.loss(output, self.training_label_assigned)
         loss.backward()
 
         grad_collect = []
@@ -70,7 +76,7 @@ class Vehicle:
             rsu.communicate_with_central_server(simulation.central_server)
 
     def compute_and_upload(self, simulation, closest_rsu):
-        self.compute(simulation)
+        self.compute(simulation, closest_rsu)
         self.upload(simulation, closest_rsu)
 
 

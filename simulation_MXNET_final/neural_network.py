@@ -11,6 +11,9 @@ from mxnet import nd, autograd, gluon
 file = open('config.yml', 'r')
 cfg = yaml.load(file, Loader=yaml.FullLoader)
 
+random.seed(cfg['seed'])
+np.random.seed(cfg['seed'])
+
 class Neural_Network:
     """
     Neural network functions

@@ -3,7 +3,7 @@ from central_server import Central_Server, Simulation
 from vehicle import Vehicle
 
 import yaml
-# from locationPicker_v3 import output_junctions
+from locationPicker_v3 import output_junctions
 import xml.etree.ElementTree as ET 
 
 import mxnet as mx
@@ -58,7 +58,8 @@ def simulate(simulation):
                     if simulation.training_data:
                         vehi.training_data_assigned, vehi.training_label_assigned = simulation.training_data.pop()
                     else:
-                        simulation.print_accuracy()
+                        if simulation.num_epoch <= 10 or simulation.num_epoch % 10 == 0:
+                            simulation.print_accuracy()
                         simulation.new_epoch()
                         vehi.training_data_assigned, vehi.training_label_assigned = simulation.training_data.pop()
                 
@@ -67,7 +68,7 @@ def simulate(simulation):
 
                     vehi.compute_and_upload(simulation, closest_rsu)
                 
-    return simulation.central_server.model
+    return simulation.central_server.net
 
 
 def main():
@@ -85,24 +86,34 @@ def main():
 
     sumo_data = SUMO_Dataset(ROU_FILE, NET_FILE)
     vehicle_dict = {}
-    # rsu_list = sumo_data.rsuList(RSU_RANGE, NUM_RSU, output_junctions)
-    rsu_list = sumo_data.rsuList_random(RSU_RANGE, NUM_RSU)
+    rsu_list = sumo_data.rsuList(RSU_RANGE, NUM_RSU, output_junctions)
+    # rsu_list = sumo_data.rsuList_random(RSU_RANGE, NUM_RSU)
     central_server = Central_Server(context, rsu_list)
 
 
     def transform(data, label):
-        data = mx.nd.transpose(data, (2,0,1))
+        if cfg['dataset'] == 'cifar10':
+            data = mx.nd.transpose(data, (2,0,1))
         data = data.astype(np.float32) / 255
         return data, label
 
     # Load Data
     batch_size = cfg['neural_network']['batch_size']
-    train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.CIFAR10('../data/cx2', train=True, transform=transform),
-                            batch_size, shuffle=True, last_batch='discard')
-    val_train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.CIFAR10('../data/cx2', train=True, transform=transform),
-                                batch_size, shuffle=False, last_batch='keep')
-    val_test_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.CIFAR10('../data/cx2', train=False, transform=transform),
-                                batch_size, shuffle=False, last_batch='keep')
+    num_training_data = cfg['num_training_data']
+    if cfg['dataset'] == 'cifar10':
+        train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.CIFAR10('../data/cx2', train=True, transform=transform).take(num_training_data),
+                                batch_size, shuffle=True, last_batch='discard')
+        val_train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.CIFAR10('../data/cx2', train=True, transform=transform).take(num_training_data),
+                                    batch_size, shuffle=False, last_batch='keep')
+        val_test_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.CIFAR10('../data/cx2', train=False, transform=transform),
+                                    batch_size, shuffle=False, last_batch='keep')
+    elif cfg['dataset'] == 'mnist':
+        train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.MNIST('../data/mnist', train=True, transform=transform).take(num_training_data),
+                                batch_size, shuffle=True, last_batch='discard')
+        val_train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.MNIST('../data/mnist', train=True, transform=transform).take(num_training_data),
+                                    batch_size, shuffle=False, last_batch='keep')
+        val_test_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.MNIST('../data/mnist', train=False, transform=transform),
+                                    batch_size, shuffle=False, last_batch='keep')
 
 
     simulation = Simulation(FCD_FILE, vehicle_dict, rsu_list, central_server, train_data, val_train_data, val_test_data)

@@ -1,21 +1,5 @@
-vehicle:
-  tasks_per_comp_power: 2
-  max_data_rows: 25
-  failure_rate: 0.000
-
-
-timer:
-  time_remove_rsu_assigned: 20
-
-  
 comm_range:
   v2rsu: 100            # vehicle to RSU
-  v2v: 100              # vehicle to vehicle (not built yet)
-  v2i: 0                # vehicle to infrastructure (not built yet)
-
-comm_speed:
-  speed_4g: 1           # units of data that can be uploaded in 1 time step
-
 
 simulation:
   ROU_FILE: '../osm_boston_common/osm.passenger.trips.xml'
@@ -28,12 +12,24 @@ simulation:
   # NET_FILE: '../osm_london/osm.net.xml'
   # FCD_FILE: '../osm_london/london_fcd.xml'
 
-  num_rsu: 5            # number of RSU
-
-  num_training_data: 10000 # number of training data used to train
+  num_rsu: 8            # number of RSU
   maximum_rsu_accumulative_gradients: 10 # how many gradients does an RSU accumulate before updating the central server
 
 neural_network:
   batch_size: 100
   epoch: 100
   learning_rate: 0.0005
+
+seed: 0
+
+
+# ********* frequently changed parameters ***************
+
+dataset: 'cifar10' # mnist, cifar10
+num_training_data: 60000 
+
+aggregation_method: 'cgc' # simplemean, cgc
+attack: 'noattack'  # signflip, gaussian, bitflip, label, noattack
+num_faulty_grads: 2
+
+cgc_method: 'multiply' # by-layer, multiply

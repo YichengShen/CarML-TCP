@@ -4,11 +4,12 @@ import xml.etree.ElementTree as ET
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
-import hdbscan
 import yaml
 
 file = open('config.yml', 'r')
 cfg = yaml.load(file, Loader=yaml.FullLoader)
+
+np.random.seed(cfg['seed'])
 
 x = []
 y = []
@@ -19,12 +20,12 @@ num_points = 0 # number of rows in fcd file
 tree = ET.parse(cfg['simulation']['FCD_FILE'])
 root = tree.getroot()
 for timestep in root:
-    if float(timestep.attrib['time']) % 3 == 0:
-        for vehicle in timestep.findall('vehicle'):
-            # x.append(float(vehicle.attrib['x'])*100)
-            # y.append(float(vehicle.attrib['y'])*100)
-            coord.append([float(vehicle.attrib['x']), float(vehicle.attrib['y'])])
-            num_points += 1
+    # if float(timestep.attrib['time']) % 10 == 0:
+    for vehicle in timestep.findall('vehicle'):
+        x.append(float(vehicle.attrib['x'])*100)
+        y.append(float(vehicle.attrib['y'])*100)
+        coord.append([float(vehicle.attrib['x']), float(vehicle.attrib['y'])])
+        num_points += 1
 
 # Print the location of each vehicle in each time step in a scatter plot
 # plt.scatter(x, y, s=0.05)
@@ -33,28 +34,22 @@ for timestep in root:
 # The value of eps and min_samples determines how each cluster is formed
 # Higher min_samples or lower eps indicate higher density necessary to form a cluster
 # More can be read about them on https://scikit-learn.org/stable/modules/clustering.html#dbscan and https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html#sklearn.cluster.DBSCAN
-min_samples = round(num_points * 0.0025) # 0.1% of traffic points
-eps = 30 # the initial eps value
+min_samples = round(num_points * 0.001) # 0.1% of traffic points
+eps = 5 # the initial eps value
 n_clusters_ = -1
 num_rsu = cfg['simulation']['num_rsu']
 # Try different eps until we find enough clusters (>= number of rsu we want to place)
 # If this fails, we need to lower our RSU number
-# while n_clusters_ < num_rsu:
-#     print("Testing DBSCAN with min_samples={} and eps={}".format(min_samples, eps))
-#     db = DBSCAN(eps=eps, min_samples=min_samples).fit(coord)
-#     labels = db.labels_ # The labels has the same shape as coord, each index i of label tells which cluster index i of coord is in
-#     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
-#     eps += 5
-#     # When increasing eps no longer contributes to getting more clusters, break
-#     if eps > 100 or n_clusters_ == 1:
-#         print("The number of RSUs is much larger than the number of clusters that can be formed.")
-#         break
-
-db = DBSCAN(eps=eps, min_samples=min_samples).fit(coord)
-labels = db.labels_ # The labels has the same shape as coord, each index i of label tells which cluster index i of coord is in
-
-# clusterer = hdbscan.HDBSCAN(min_cluster_size=int(num_points*0.0025))
-# labels = clusterer.fit_predict(coord)
+while n_clusters_ < num_rsu:
+    # print("Testing DBSCAN with min_samples={} and eps={}".format(min_samples, eps))
+    db = DBSCAN(eps=eps, min_samples=min_samples).fit(coord)
+    labels = db.labels_ # The labels has the same shape as coord, each index i of label tells which cluster index i of coord is in
+    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+    eps += 5
+    # When increasing eps no longer contributes to getting more clusters, break
+    if eps > 100 or n_clusters_ == 1:
+        print("The number of RSUs is much larger than the number of clusters that can be formed.")
+        break
 
 # Print the density of each cluster
 # Note: The cluster with the key -1 are noise (outliers) and we don't care about it
@@ -73,7 +68,7 @@ def largestN(n):
     return order[1:n+1]
 
 largest_dic = {}
-largest = largestN(cfg['simulation']['num_rsu'])
+largest = largestN(num_rsu)
 for key, value in dic.items():
     if key in largest and key != -1:
         largest_dic[key] = value
@@ -144,7 +139,7 @@ for key in order:
                     d = sqrt((float(junc.attrib['x']) - float(junction.attrib['x'])) ** 2 + (float(junc.attrib['y']) - float(junction.attrib['y'])) ** 2)
                     area_intersect = intersection_area(d, rsu_range, rsu_range)
                     ratio_intersect = area_intersect / (rsu_range**2 * np.pi)
-                    if ratio_intersect >= 0.2: # the allowed ratio of overlaping
+                    if ratio_intersect >= 0.8: # the allowed ratio of overlaping
                         overlap = True
             # If the current junction passes the overlap test, then update junction_dic
             if not overlap:
@@ -168,27 +163,17 @@ x_rsu = []
 y_rsu = []
 total_traffic = 0
 output_junctions = []
-# for key, junction in junction_dic.items():
-#     if junction is not None:
-#         total_traffic += dicc[key]
-# for key, junction in junction_dic.items():
-#     if junction is not None:
-#         print("Cluster:", key, "Coord:", (float(junction.attrib['x']), float(junction.attrib['y'])), "Traffic Density:", dicc[key])
-#         x_rsu.append(float(junction.attrib['x']))
-#         y_rsu.append(float(junction.attrib['y']))
-#         output_junctions.append((junction, dicc[key]/total_traffic))
-
-tree = ET.parse(cfg['simulation']['NET_FILE'])
-root = tree.getroot()
-rsu_list = []
-junction_list = np.random.choice(root.findall('junction'), cfg['simulation']['num_rsu'], replace=False)
-for i in range(cfg['simulation']['num_rsu']):
-    x_rsu.append(float(junction_list[i].attrib['x']))
-    y_rsu.append(float(junction_list[i].attrib['y']))
-
+for key, junction in junction_dic.items():
+    if junction is not None:
+        total_traffic += dicc[key]
+for key, junction in junction_dic.items():
+    if junction is not None:
+        print("Cluster:", key, "Coord:", (float(junction.attrib['x']), float(junction.attrib['y'])), "Traffic Density:", dicc[key])
+        x_rsu.append(float(junction.attrib['x']))
+        y_rsu.append(float(junction.attrib['y']))
+        output_junctions.append((junction, dicc[key]/total_traffic))
 
 
 # Plot RSU as red stars
-plt.scatter(x_rsu, y_rsu, s=50, c='red', marker='*')
-plt.title("Random Placement")
-plt.show()
+# plt.scatter(x_rsu, y_rsu, s=50, c='red', marker='*')
+# plt.show()

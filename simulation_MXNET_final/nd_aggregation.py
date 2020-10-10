@@ -2,11 +2,17 @@ import mxnet as mx
 from mxnet import nd, autograd, gluon
 import numpy as np
 import math
+import yaml
 
+file = open('config.yml', 'r')
+cfg = yaml.load(file, Loader=yaml.FullLoader)
 
-def simple_mean_filter(gradients, net):
+np.random.seed(cfg['seed'])
+
+def simple_mean_filter(gradients, net, f, byz):
     # X is a 2d list of nd array
     param_list = [nd.concat(*[xx.reshape((-1, 1)) for xx in x], dim=0) for x in gradients]
+    byz(param_list, f)
     mean_nd = nd.mean(nd.concat(*param_list, dim=1), axis=-1)
     grad_collect = []
     idx = 0
@@ -50,13 +56,17 @@ def cgc_by_layer(gradients, f):
         output.append(grad)
     return output
 
-def cgc_filter(gradients, net, f):
-    """not finished"""
-    # output = cgc_by_layer(gradients, f)
-    output = multiply_norms(gradients, f)
+def cgc_filter(gradients, net, f, byz):
+    """Gets rid of the largest f gradients away from the norm"""
+    cgc_method = cfg['cgc_method']
+    if cgc_method == 'by-layer':
+        output = cgc_by_layer(gradients, f)
+    else:
+        output = multiply_norms(gradients, f)
 
     # X is a 2d list of nd array
     param_list = [nd.concat(*[xx.reshape((-1, 1)) for xx in x], dim=0) for x in output]
+    byz(param_list, f)
     mean_nd = nd.mean(nd.concat(*param_list, dim=1), axis=-1)
     grad_collect = []
     idx = 0

@@ -8,6 +8,7 @@ from rsu import RSU
 file = open('config.yml', 'r')
 cfg = yaml.load(file, Loader=yaml.FullLoader)
 
+np.random.seed(cfg['seed'])
 
 class SUMO_Dataset:
     """
