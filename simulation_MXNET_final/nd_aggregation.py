@@ -7,7 +7,7 @@ import yaml
 file = open('config.yml', 'r')
 cfg = yaml.load(file, Loader=yaml.FullLoader)
 
-np.random.seed(cfg['seed'])
+# np.random.seed(cfg['seed'])
 
 def simple_mean_filter(gradients, net, f, byz):
     # X is a 2d list of nd array

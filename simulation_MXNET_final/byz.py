@@ -8,8 +8,8 @@ import numpy as np
 file = open('config.yml', 'r')
 cfg = yaml.load(file, Loader=yaml.FullLoader)
 
-random.seed(cfg['seed'])
-mx.random.seed(cfg['seed'])
+# random.seed(cfg['seed'])
+# mx.random.seed(cfg['seed'])
 
 # no faulty workers
 def no_byz(v, f):

@@ -9,7 +9,7 @@ import yaml
 file = open('config.yml', 'r')
 cfg = yaml.load(file, Loader=yaml.FullLoader)
 
-np.random.seed(cfg['seed'])
+# np.random.seed(cfg['seed'])
 
 x = []
 y = []

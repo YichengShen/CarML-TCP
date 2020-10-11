@@ -11,7 +11,7 @@ import os
 file = open('config.yml', 'r')
 cfg = yaml.load(file, Loader=yaml.FullLoader)
 
-np.random.seed(cfg['seed'])
+# np.random.seed(cfg['seed'])
 
 class Central_Server:
     """
