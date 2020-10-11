@@ -5,7 +5,7 @@ import yaml
 import mxnet as mx
 from mxnet import gluon, nd
 import csv
-
+import os
 
 
 file = open('config.yml', 'r')
@@ -87,7 +87,7 @@ class Simulation:
     - rsu_list
     - dataset
     """
-    def __init__(self, FCD_file, vehicle_dict: dict, rsu_list: list, central_server, training_set, val_train_data, val_test_data):
+    def __init__(self, FCD_file, vehicle_dict: dict, rsu_list: list, central_server, training_set, val_train_data, val_test_data, num_round):
         self.FCD_file = FCD_file
         self.vehicle_dict = vehicle_dict
         self.rsu_list = rsu_list
@@ -99,6 +99,7 @@ class Simulation:
         self.training_set = training_set
         self.val_train_data = val_train_data
         self.val_test_data = val_test_data
+        self.num_round = num_round
        
     def add_into_vehicle_dict(self, vehicle):
         self.vehicle_dict[vehicle.attrib['id']] = Vehicle(vehicle.attrib['id'])
@@ -134,8 +135,11 @@ class Simulation:
                                                                     accu))
 
     def save_data(self, accu, loss):
-        dir_name = cfg['dataset'] + '-' + cfg['aggregation_method'] + '-' + cfg['attack'] + '.csv'
-        with open(dir_name, mode='a') as f:
+        if not os.path.exists('collected_results'):
+            os.makedirs('collected_results')
+        dir_name = cfg['dataset'] + '-' + cfg['aggregation_method'] + '-' + cfg['attack'] + '-' + 'round' + str(self.num_round) + '.csv'
+        p = os.path.join('collected_results', dir_name)
+        with open(p, mode='a') as f:
             writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             writer.writerow([self.num_epoch, accu, loss, cfg['aggregation_method'], cfg['attack']])
             

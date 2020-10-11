@@ -18,6 +18,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a model for image classification.')
     parser.add_argument('--num-gpus', type=int, default=0,
                         help='number of gpus to use.')
+    parser.add_argument('--num-round', type=int, default=0,
+                        help='number of round.')
     opt = parser.parse_args()
     return opt
 
@@ -77,6 +79,8 @@ def main():
     num_gpus = opt.num_gpus
     context = [mx.gpu(i) for i in range(num_gpus)] if num_gpus > 0 else [mx.cpu()]
 
+    num_round = opt.num_round
+
     ROU_FILE = cfg['simulation']['ROU_FILE']
     NET_FILE = cfg['simulation']['NET_FILE']
     FCD_FILE = cfg['simulation']['FCD_FILE']
@@ -116,7 +120,7 @@ def main():
                                     batch_size, shuffle=False, last_batch='keep')
 
 
-    simulation = Simulation(FCD_FILE, vehicle_dict, rsu_list, central_server, train_data, val_train_data, val_test_data)
+    simulation = Simulation(FCD_FILE, vehicle_dict, rsu_list, central_server, train_data, val_train_data, val_test_data, num_round)
     model = simulate(simulation)
 
     # # Test the accuracy of the computed model
