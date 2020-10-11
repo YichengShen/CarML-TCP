@@ -17,7 +17,7 @@ simulation:
 
 neural_network:
   batch_size: 100
-  epoch: 100
+  epoch: 200
   learning_rate: 0.0005
 
 seed: 0
@@ -27,8 +27,9 @@ seed: 0
 
 dataset: 'cifar10' # mnist, cifar10
 num_training_data: 60000 
+num_val_loss: 5000
 
-aggregation_method: 'cgc' # simplemean, cgc
+aggregation_method: 'simplemean' # simplemean, cgc
 attack: 'noattack'  # signflip, gaussian, bitflip, label, noattack
 num_faulty_grads: 2
 
