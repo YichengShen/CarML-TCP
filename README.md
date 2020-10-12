@@ -17,5 +17,5 @@
 5. Run
     `tmux`   
     `cd simulation_MXNET_final`   
-    `nano config.yaml`  
+    `nano config.yml`  
     `python3 main.py --num-round 1`  
