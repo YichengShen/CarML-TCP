@@ -8,6 +8,8 @@
 3. SSH into VM   
     
 4. Install packages    
+    `sudo apt-get update`  
+    `sudo apt-get install tmux`   
     `sudo apt-get -y install python3-pip`      
     `sudo apt install git-all`    
     `git clone https://github.com/YichengShen/CarML-CGC.git`   
