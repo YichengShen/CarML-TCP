@@ -29,4 +29,4 @@ def bitflip_attack(v, f):
 
 def signflip_attack(rsu):
         for i in random.sample(range(10), 2):      
-            rsu.accumulative_gradients[i][2] = nd.array(20*np.negative(rsu.accumulative_gradients[i][2].asnumpy()))
+            rsu.accumulative_gradients[i][0] = nd.array(20*np.negative(rsu.accumulative_gradients[i][0].asnumpy()))

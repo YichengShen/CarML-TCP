@@ -19,6 +19,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a model for image classification.')
     parser.add_argument('--num-gpus', type=int, default=0,
                         help='number of gpus to use.')
+    parser.add_argument('--num-round', type=int, default=0,
+                        help='number of round.')
     opt = parser.parse_args()
     return opt
 
@@ -106,6 +108,8 @@ def main():
     num_gpus = opt.num_gpus
     context = [mx.gpu(i) for i in range(num_gpus)] if num_gpus > 0 else [mx.cpu()]
 
+    num_round = opt.num_round
+
     ROU_FILE = cfg['simulation']['ROU_FILE']
     NET_FILE = cfg['simulation']['NET_FILE']
     FCD_FILE = cfg['simulation']['FCD_FILE']
@@ -131,8 +135,19 @@ def main():
     num_training_data = cfg['num_training_data']
     train_data_byclass = None
     if cfg['dataset'] == 'cifar10':
-        train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.CIFAR10('../data/cx2', train=True, transform=transform).take(num_training_data),
+        if cfg['data_distribution'] == 'random':
+            train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.CIFAR10('../data/cx2', train=True, transform=transform).take(num_training_data),
                                 batch_size, shuffle=True, last_batch='discard')
+        elif cfg['data_distribution'] == 'byclass':
+            train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.CIFAR10('../data/cx2', train=True, transform=transform).take(num_training_data),
+                                batch_size=num_training_data, shuffle=True, last_batch='keep')
+            train_data_byclass = defaultdict(list)
+
+            for i in train_data:
+                X, y = i
+                for j in range(len(X)):
+                    train_data_byclass[y[j].asnumpy()[0]].append(X[j].asnumpy())
+
         val_train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.CIFAR10('../data/cx2', train=True, transform=transform).take(num_training_data),
                                     batch_size, shuffle=False, last_batch='keep')
         val_test_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.CIFAR10('../data/cx2', train=False, transform=transform),
@@ -154,7 +169,7 @@ def main():
         val_test_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.MNIST('../data/mnist', train=False, transform=transform),
                                     batch_size, shuffle=False, last_batch='keep')
 
-    simulation = Simulation(FCD_FILE, vehicle_dict, rsu_list, central_server, train_data, val_train_data, val_test_data, train_data_byclass)
+    simulation = Simulation(FCD_FILE, vehicle_dict, rsu_list, central_server, train_data, val_train_data, val_test_data, train_data_byclass, num_round)
     model = simulate(simulation)
 
     # # Test the accuracy of the computed model

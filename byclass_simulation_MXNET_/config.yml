@@ -25,7 +25,7 @@ seed: 0
 
 # ********* frequently changed parameters ***************
 
-dataset: 'mnist' # mnist, cifar10
+dataset: 'cifar10' # mnist, cifar10
 num_training_data: 60000 
 
 data_distribution: 'byclass' # random, byclass
