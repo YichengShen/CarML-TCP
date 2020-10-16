@@ -140,7 +140,7 @@ def main():
                                 batch_size, shuffle=True, last_batch='discard')
         elif cfg['data_distribution'] == 'byclass':
             train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.CIFAR10('../data/cx2', train=True, transform=transform).take(num_training_data),
-                                batch_size=num_training_data, shuffle=True, last_batch='keep')
+                                batch_size=num_training_data, shuffle=True, last_batch='discard')
             train_data_byclass = defaultdict(list)
 
             for i in train_data:
