@@ -1,0 +1,36 @@
+comm_range:
+  v2rsu: 100            # vehicle to RSU
+
+simulation:
+  ROU_FILE: '../osm_boston_common/osm.passenger.trips.xml'
+  NET_FILE: '../osm_boston_common/osm.net.xml'
+  FCD_FILE: '../osm_boston_common/osm_fcd.xml'
+  # ROU_FILE: ''
+  # NET_FILE: '../MonacoST/most.net.xml'
+  # FCD_FILE: '../MonacoST/most_fcd.xml'
+  # ROU_FILE: '../osm_london/osm.passenger.trips.xml'
+  # NET_FILE: '../osm_london/osm.net.xml'
+  # FCD_FILE: '../osm_london/london_fcd.xml'
+
+  num_rsu: 5            # number of RSU
+  maximum_rsu_accumulative_gradients: 10 # how many gradients does an RSU accumulate before updating the central server
+
+neural_network:
+  batch_size: 100
+  epoch: 200
+  learning_rate: 0.0005
+
+seed: 0
+
+
+# ********* frequently changed parameters ***************
+
+dataset: 'cifar10' # mnist, cifar10
+num_training_data: 10000 
+
+data_distribution: 'byclass' # random, byclass
+aggregation_method: 'simplemean' # simplemean, cgc
+attack: 'noattack'  # signflip, gaussian, bitflip, label, noattack
+num_faulty_grads: 2
+
+cgc_method: 'multiply' # by-layer, multiply
