@@ -1,10 +1,12 @@
 import socket
 import sys
-from _thread import *
+import _thread
+import pickle
+import time
 
 class CloudServer:
     def __init__(self):
-        self.model = 0
+        self.gradient = None
 
     def run_server(self):
         HOST = socket.gethostname()	# Symbolic name meaning all available interfaces
@@ -30,15 +32,38 @@ class CloudServer:
         def clientthread(conn):
             #infinite loop so that function do not terminate and thread do not end.
             while True:
-                #Receiving from client
-                data = int.from_bytes(conn.recv(1024), byteorder='big')
-                if not data: 
-                    break
+                conn.setblocking(0)
+                timeout = 1
+                begin = time.time()
+                #Now receive data
+                data = b""
+                while True:
+                    if data and time.time() - begin > timeout:
+                        break
+                    if time.time() - begin > timeout * 2:
+                        break
+                    
+                    try:
+                        packet = conn.recv(4096)
+                        if packet:
+                            data += packet
+                    except:
+                        pass
+                
+                if data:
+                    self.gradient = pickle.loads(data)
 
-                self.model += data
-                print('current model : ', self.model)
-            
-                conn.sendall(self.model.to_bytes(2, 'big'))
+                print('gradient received from RSU : ', repr(self.gradient))
+
+                # conn.setblocking(1)
+                gradient_ = pickle.dumps(self.gradient)
+                try :
+                    #Set the whole string
+                    conn.sendall(gradient_)
+                except socket.error:
+                    #Send failed
+                    print('Send failed')
+                    sys.exit()
             #came out of loop
             conn.close()
 
@@ -49,7 +74,7 @@ class CloudServer:
             print('Connected with ' + addr[0] + ':' + str(addr[1]))
             
             #start new thread takes 1st argument as a function name to be run, second is the tuple of arguments to the function.
-            start_new_thread(clientthread, (conn,))
+            _thread.start_new_thread(clientthread, (conn,))
 
         s.close()
 
