@@ -2,10 +2,14 @@
 
 import socket	#for sockets
 import sys	#for exit
+import mxnet as mx
+from mxnet import nd
+import pickle
+import time
 
 class Vehicle:
     def __init__(self):
-        self.model = 0
+        self.gradient = None
 
     def run_client(self):
         #create an INET, STREAMing socket
@@ -18,7 +22,7 @@ class Vehicle:
         print('Socket Created')
 
         host = socket.gethostname()
-        port = 7777
+        port = 6666
 
         try:
             remote_ip = socket.gethostbyname(host)
@@ -34,11 +38,17 @@ class Vehicle:
         print('Socket Connected to ' + host + ' on ip ' + remote_ip)
 
         #Send some data to remote server
-        message = 1
+        gradient = [nd.random_normal(0,1,shape=(128,784))] +\
+                    [nd.random_normal(0,1,shape=(128))] +\
+                    [nd.random_normal(0,1,shape=(64,128))] +\
+                    [nd.random_normal(0,1,shape=(64))] +\
+                    [nd.random_normal(0,1,shape=(10,64))] +\
+                    [nd.random_normal(0,1,shape=(10))]
+        gradient_ = pickle.dumps(gradient)
 
         try :
             #Set the whole string
-            s.sendall((message).to_bytes(2, 'big'))
+            s.sendall(gradient_)
         except socket.error:
             #Send failed
             print('Send failed')
@@ -46,10 +56,30 @@ class Vehicle:
 
         print('Message send successfully')
 
+        s.setblocking(0)
+        timeout = 2
+        begin = None
         #Now receive data
-        self.model = int.from_bytes(s.recv(4096), byteorder='big')
+        data = b""
+        while True:
+            if data and begin is None:
+                begin = time.time()
+            if data and time.time() - begin > timeout:
+                break
+            # if time.time() - begin > timeout * 2:
+            #     break
+            try:
+                packet = s.recv(4096)
+                if packet:
+                    data += packet
+                else:
+                    break
+            except:
+                pass
+        if data:
+            self.gradient = pickle.loads(data)
 
-        print('model received : ', self.model)
+        print('gradient received from RSU : ', repr(self.gradient))
 
         s.close()
 

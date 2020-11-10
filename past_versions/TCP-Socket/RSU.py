@@ -1,6 +1,8 @@
 import socket	#for sockets
 import sys	#for exit
-from _thread import *
+import _thread
+import pickle
+import time
 
 class RSU:
     def __init__(self):
@@ -29,19 +31,44 @@ class RSU:
 
         #Function for handling connections. This will be used to create threads
         def clientthread(conn):
+            conn.setblocking(0)
+            timeout = 1
             #infinite loop so that function do not terminate and thread do not end.
             while True:
                 #Receiving from client
-                data = int.from_bytes(conn.recv(1024), byteorder='big')
+                # data = int.from_bytes(conn.recv(1024), byteorder='big')
+                begin = time.time()
+                data = b""
+                while True:
+                    if data and time.time() - begin > timeout:
+                        break
+                    if time.time() - begin > timeout * 2:
+                        break
+                    
+                    try:
+                        packet = conn.recv(4096)
+                        if packet:
+                            data += packet
+                    except:
+                        pass
+                if data:
+                    self.gradient = pickle.loads(data)
                 if not data: 
                     break
 
-                self.gradient += data
-                print('gradient : ', self.gradient)
+                # self.gradient += data
+                print('gradient : ', repr(self.gradient))
 
                 self.run_client()
-            
-                conn.sendall(self.model.to_bytes(2, 'big'))
+                conn.setblocking(1)
+                gradient_ = pickle.dumps(self.gradient)
+                try :
+                    #Set the whole string
+                    conn.sendall(gradient_)
+                except socket.error:
+                    #Send failed
+                    print('Send failed')
+                    sys.exit()
             #came out of loop
             conn.close()
 
@@ -52,7 +79,7 @@ class RSU:
             print('Connected with ' + addr[0] + ':' + str(addr[1]))
             
             #start new thread takes 1st argument as a function name to be run, second is the tuple of arguments to the function.
-            start_new_thread(clientthread, (conn,))
+            _thread.start_new_thread(clientthread, (conn,))
 
         s.close()
 
@@ -84,10 +111,11 @@ class RSU:
 
         #Send some data to remote server
         message = self.gradient
+        gradient_ = pickle.dumps(self.gradient)
 
         try :
             #Set the whole string
-            s.sendall((message).to_bytes(2, 'big'))
+            s.sendall(gradient_)
         except socket.error:
             #Send failed
             print('Send failed')
@@ -95,10 +123,29 @@ class RSU:
 
         print('Message send successfully')
 
+        s.setblocking(0)
+        timeout = 1
+        begin = None
         #Now receive data
-        self.model = int.from_bytes(s.recv(4096), byteorder='big')
+        data = b""
+        while True:
+            if data and begin is None:
+                begin = time.time()
+            if data and time.time() - begin > timeout:
+                break
+            # if time.time() - begin > timeout * 2:
+            #     break
+            
+            try:
+                packet = s.recv(4096)
+                if packet:
+                    data += packet
+            except:
+                pass
+        if data:
+            self.gradient = pickle.loads(data)
 
-        print('model returned : ', self.model)
+        print('gradient received from Central Server : ', self.gradient)
 
         s.close()
 
