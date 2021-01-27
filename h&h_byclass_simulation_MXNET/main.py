@@ -169,45 +169,20 @@ def main():
                                 batch_size, shuffle=True, last_batch='discard')            
         elif cfg['data_distribution'] == 'byclass':
             train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.MNIST('../data/mnist', train=True, transform=transform).take(num_training_data),
-                                        batch_size=num_training_data, shuffle=True, last_batch='keep')
-            train_data_byclass = defaultdict(list)
+                                        batch_size=num_training_data, shuffle=True, last_batch='discard')
             for i in train_data:
-                for j in range(num_training_data):
-                    train_data_byclass[i[1][j].asnumpy()[0]].append(i[0][j].asnumpy())
-
-            labels_ = list(train_data_byclass.keys())
-            data_ = list(train_data_byclass.values())
-            data_full = copy.deepcopy(data_)
-            prop1 = 0.4
-            prop2 = 0.3
-            prop3 = 0.3
-            train_data_byrsu = {}
-            for i in range(10):
-                if i == 8:
-                    j = 9
-                    k = 0
-                elif i == 9:
-                    j = 0
-                    k = 1
-                else:
-                    j = i+1
-                    k = i+2
-                X = data_[i][:int(prop1*len(data_full[i]))] + data_[j][:int(prop2*len(data_full[j]))] + data_[k][:int(prop3*len(data_full[k]))]
-                # print(f'{i}:{len(data_[i])}, {j}:{len(data_[j])}, {k}:{len(data_[k])}')
-                del data_[i][:int(prop1*len(data_full[i]))]
-                del data_[j][:int(prop2*len(data_full[j]))]
-                del data_[k][:int(prop3*len(data_full[k]))]
-                # print(f'{i}:{len(data_[i])}, {j}:{len(data_[j])}, {k}:{len(data_[k])}')
-                y = [labels_[i] for _ in range(int(prop1*len(data_full[i])))] + [labels_[j] for _ in range(int(prop2*len(data_full[j])))] + [labels_[k] for _ in range(int(prop3*len(data_full[k])))]
-                
-                train_data_byrsu[i] = (X, y)
+                X, y = i
+                X = list(X.asnumpy())
+                y = list(y.asnumpy())
+                X_first_half = X[:int(len(X)/2)]
+                y_first_half = y[:int(len(y)/2)]
+                X_second_half = X[int(len(X)/2):]
+                y_second_half = y[int(len(y)/2):]
             
+            train_data_byclass = defaultdict(list)
 
-            for i in range(10):
-                train_data_byrsu[i][0].extend(data_[i])
-                train_data_byrsu[i][1].extend([labels_[i] for _ in range(len(data_[i]))])
-                # print(len(train_data_byrsu[i][0]))
-                # print(len(train_data_byrsu[i][1]))
+            for j in range(len(X_second_half)):
+                train_data_byclass[y_second_half[j]].append(X_second_half[j])
 
             
         val_train_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.MNIST('../data/mnist', train=True, transform=transform).take(num_training_data),

@@ -25,11 +25,11 @@ seed: 0
 
 # ********* frequently changed parameters ***************
 
-dataset: 'cifar10' # mnist, cifar10
+dataset: 'mnist' # mnist, cifar10
 num_training_data: 50000 
 num_val_loss: 5000
 
-aggregation_method: 'cgc' # simplemean, cgc
+aggregation_method: 'median' # simplemean, cgc, krum
 attack: 'signflip'  # signflip, gaussian, bitflip, label, noattack
 num_faulty_grads: 2
 

@@ -36,6 +36,10 @@ class RSU:
             return nd_aggregation.cgc_filter(grad_list, net, f, byz)
         elif aggre_method == 'simplemean':
             return nd_aggregation.simple_mean_filter(grad_list, net, f, byz)
+        elif aggre_method == 'krum':
+            return nd_aggregation.krum(grad_list, net, f, byz)
+        elif aggre_method == 'median':
+            return nd_aggregation.marginal_median(grad_list, net, f, byz)
 
     # The RSU updates the model in the central server with its accumulative gradients and downloads the 
     # latest model from the central server
