@@ -39,9 +39,9 @@ class SUMO_Dataset:
             rsu_list.append(RSU(id, float(junction_list[i].attrib['x']), float(junction_list[i].attrib['y']), rsu_range, 1/cfg['simulation']['num_rsu']))
         return rsu_list
 
-    def rsuList(self, rsu_range, rsu_nums, junction_list):
+    def rsuList(self, rsu_range, rsu_nums, junction_list, AGGRE): #$$$
         rsu_list = []
         for i in range(rsu_nums):
             id = 'rsu' + str(i)
-            rsu_list.append(RSU(id, float(junction_list[i][0].attrib['x']), float(junction_list[i][0].attrib['y']), rsu_range, junction_list[i][1]))
+            rsu_list.append(RSU(id, float(junction_list[i][0].attrib['x']), float(junction_list[i][0].attrib['y']), rsu_range, junction_list[i][1], AGGRE)) #$$$
         return rsu_list

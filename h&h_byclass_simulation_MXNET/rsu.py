@@ -6,6 +6,7 @@ import yaml
 import random
 from mxnet import nd
 
+
 file = open('config.yml', 'r')
 cfg = yaml.load(file, Loader=yaml.FullLoader)
 
@@ -22,16 +23,19 @@ class RSU:
     - rsu_range
     - accumulative_gradients
     """
-    def __init__(self, rsu_id, rsu_x, rsu_y, rsu_range, traffic_proportion):
+    def __init__(self, rsu_id, rsu_x, rsu_y, rsu_range, traffic_proportion, AGGRE): #$$$
         self.rsu_id = rsu_id
         self.rsu_x = rsu_x
         self.rsu_y = rsu_y
         self.rsu_range = rsu_range
         self.accumulative_gradients = []
+        
+        self.AGGRE = AGGRE
 
     def aggregate(self, net, grad_list, byz=byz.no_byz):
         f = cfg['num_faulty_grads']
-        aggre_method = cfg['aggregation_method']
+        # aggre_method = cfg['aggregation_method']
+        aggre_method = self.AGGRE
         if aggre_method == 'cgc':
             return nd_aggregation.cgc_filter(grad_list, net, f, byz)
         elif aggre_method == 'simplemean':

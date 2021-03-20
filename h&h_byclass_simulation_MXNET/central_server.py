@@ -11,7 +11,6 @@ import os
 from sklearn.utils import shuffle
 
 
-
 file = open('config.yml', 'r')
 cfg = yaml.load(file, Loader=yaml.FullLoader)
 
@@ -91,25 +90,49 @@ class Simulation:
     - rsu_list
     - dataset
     """
-    def __init__(self, FCD_file, vehicle_dict: dict, rsu_list: list, central_server, training_set, val_train_data, val_test_data, train_data_byclass, X_first_half, y_first_half, num_round):
+    def __init__(self, FCD_file, vehicle_dict: dict, rsu_list: list, central_server, training_set, val_train_data, val_test_data, train_data_byclass, X_first_half, y_first_half, num_round, AGGRE, I): #$$$
         self.FCD_file = FCD_file
         self.vehicle_dict = vehicle_dict
         self.rsu_list = rsu_list
         self.central_server = central_server
         self.num_epoch = 0
+
+        # for random
         self.training_data = []
+
+        # for byclass
         self.training_data_byclass = []
         self.training_label_byclass = []
         self.train_data_byclass = train_data_byclass
         self.X_first_half = X_first_half
         self.y_first_half = y_first_half
+        self.combined_byclass = self.prepare_data()
+
         self.epoch_loss = mx.metric.CrossEntropy()
         self.epoch_accuracy = mx.metric.Accuracy()
         self.training_set = training_set
         self.val_train_data = val_train_data
         self.val_test_data = val_test_data
         self.num_round = num_round
-       
+
+        self.AGGRE = AGGRE
+        self.I = I
+
+    def prepare_data(self):
+        res = []
+        random_len = len(self.X_first_half) // 5 + 1
+            
+        for i in range(5):
+            X_ = self.X_first_half[i*random_len:(i+1)*random_len]
+            y_ = self.y_first_half[i*random_len:(i+1)*random_len]
+            X_new = copy.deepcopy(X_)
+            y_new = copy.deepcopy(y_)
+            train_data_list = list(self.train_data_byclass.values())
+            X_new.extend(train_data_list[2*i] + train_data_list[2*i+1])
+            y_new.extend([list(self.train_data_byclass.keys())[2*i] for _ in range(len(train_data_list[2*i]))] + [list(self.train_data_byclass.keys())[2*i+1] for _ in range(len(train_data_list[2*i+1]))])
+            res.append((X_new, y_new))
+        return res
+
     def add_into_vehicle_dict(self, vehicle):
         self.vehicle_dict[vehicle.attrib['id']] = Vehicle(vehicle.attrib['id'])
 
@@ -146,11 +169,13 @@ class Simulation:
     def save_data(self, accu, loss):
         if not os.path.exists('collected_results'):
             os.makedirs('collected_results')
-        dir_name = cfg['dataset'] + '-' + cfg['aggregation_method'] + '-' + cfg['attack'] + '-' + 'round' + str(self.num_round) + '.csv'
+        # dir_name = cfg['dataset'] + '-' + cfg['aggregation_method'] + '-' + cfg['attack'] + '-' + 'round' + str(self.num_round) + '.csv'
+        dir_name = cfg['dataset'] + '-' + self.AGGRE + '-' + cfg['attack'] + '-' + 'round' + str(self.I) + '.csv' #$$$
         p = os.path.join('collected_results', dir_name)
         with open(p, mode='a') as f:
             writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            writer.writerow([self.num_epoch, accu, loss, cfg['aggregation_method'], cfg['attack']])
+            # writer.writerow([self.num_epoch, accu, loss, cfg['aggregation_method'], cfg['attack']])
+            writer.writerow([self.num_epoch, accu, loss, self.AGGRE, cfg['attack']]) #$$$
             
 
     def new_epoch(self):
@@ -159,28 +184,11 @@ class Simulation:
             for i, (data, label) in enumerate(self.training_set):
                 self.training_data.append((data, label))
         elif cfg['data_distribution'] == 'byclass':
-            # self.training_data_byclass = []
-            # # print([len(i) for i in self.train_data_byclass.values()])
-            # for arr in self.train_data_byclass.values():
-            #     new_arr = arr.copy()
-            #     np.random.shuffle(new_arr)
-            #     self.training_data_byclass.append(new_arr)
-            # for i in self.train_data_byclass.keys():
-            #     self.training_label_byclass.append(i)
             self.training_data_byclass = []
             self.training_label_byclass = []
-            random_len = len(self.X_first_half) // 5 + 1
-            
-            for i in range(5):
-                X_ = self.X_first_half[i*random_len:(i+1)*random_len]
-                y_ = self.y_first_half[i*random_len:(i+1)*random_len]
-                X_new = copy.deepcopy(X_)
-                y_new = copy.deepcopy(y_)
-                train_data_list = list(self.train_data_byclass.values())
-                X_new.extend(train_data_list[2*i] + train_data_list[2*i+1])
-                y_new.extend([list(self.train_data_byclass.keys())[2*i] for _ in range(len(train_data_list[2*i]))] + [list(self.train_data_byclass.keys())[2*i+1] for _ in range(len(train_data_list[2*i+1]))])
-                X_new, y_new = shuffle(np.array(X_new), np.array(y_new))
-                self.training_data_byclass.append(X_new.tolist())
-                self.training_label_byclass.append(y_new.tolist())
+            for X, y in self.combined_byclass:
+                X, y = shuffle(np.array(X), np.array(y))
+                self.training_data_byclass.append(X.tolist())
+                self.training_label_byclass.append(y.tolist())
 
 

@@ -103,7 +103,7 @@ def simulate(simulation):
     return simulation.central_server.net
 
 
-def main():
+def main(AGGRE, I):  #$$$
     opt = parse_args()
 
     num_gpus = opt.num_gpus
@@ -120,7 +120,7 @@ def main():
 
     sumo_data = SUMO_Dataset(ROU_FILE, NET_FILE)
     vehicle_dict = {}
-    rsu_list = sumo_data.rsuList(RSU_RANGE, NUM_RSU, output_junctions)
+    rsu_list = sumo_data.rsuList(RSU_RANGE, NUM_RSU, output_junctions, AGGRE) #$$$
     # rsu_list = sumo_data.rsuList_random(RSU_RANGE, NUM_RSU)
     central_server = Central_Server(context, rsu_list)
 
@@ -190,7 +190,7 @@ def main():
         val_test_data = mx.gluon.data.DataLoader(mx.gluon.data.vision.MNIST('../data/mnist', train=False, transform=transform),
                                     batch_size, shuffle=False, last_batch='keep')
 
-    simulation = Simulation(FCD_FILE, vehicle_dict, rsu_list, central_server, train_data, val_train_data, val_test_data, train_data_byclass, X_first_half, y_first_half, num_round)
+    simulation = Simulation(FCD_FILE, vehicle_dict, rsu_list, central_server, train_data, val_train_data, val_test_data, train_data_byclass, X_first_half, y_first_half, num_round, AGGRE, I) #$$$
     model = simulate(simulation)
 
     # # Test the accuracy of the computed model
