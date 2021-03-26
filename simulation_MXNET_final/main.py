@@ -68,7 +68,8 @@ def simulate(simulation):
                     # Download Model
                     vehi.download_model_from(simulation.central_server)
 
-                    vehi.compute_and_upload(simulation, closest_rsu)
+                    time = vehi.compute_and_upload(simulation, closest_rsu)
+                    simulation.total_filter_time += time
                 
     return simulation.central_server.net
 

@@ -4,8 +4,8 @@ import os
 
 
 
-for AGGRE in ['cgc', 'simplemean', 'krum', 'median']:
-    for I in range(1,6):
+for AGGRE in ['cgc', 'krum', 'median', 'simplemean']:
+    for I in range(1,2):
         with open('config.yml', 'r') as file:
             cfg = yaml.load(file, Loader=yaml.FullLoader)
             cfg['aggregation_method'] = AGGRE

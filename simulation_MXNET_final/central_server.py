@@ -100,6 +100,7 @@ class Simulation:
         self.val_train_data = val_train_data
         self.val_test_data = val_test_data
         self.num_round = num_round
+        self.total_filter_time = 0
        
     def add_into_vehicle_dict(self, vehicle):
         self.vehicle_dict[vehicle.attrib['id']] = Vehicle(vehicle.attrib['id'])
@@ -128,20 +129,20 @@ class Simulation:
         _, loss = self.epoch_loss.get()
 
         # Save accuracy and loss to csv
-        self.save_data(accu, loss)
+        self.save_data(accu, loss, self.total_filter_time)
 
         print("Epoch {:03d}: Loss: {:03f}, Accuracy: {:03f}\n".format(self.num_epoch,
                                                                     loss,
                                                                     accu))
 
-    def save_data(self, accu, loss):
+    def save_data(self, accu, loss, filter_time):
         if not os.path.exists('collected_results'):
             os.makedirs('collected_results')
         dir_name = cfg['dataset'] + '-' + cfg['aggregation_method'] + '-' + cfg['attack'] + '-' + 'round' + str(self.num_round) + '.csv'
         p = os.path.join('collected_results', dir_name)
         with open(p, mode='a') as f:
             writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            writer.writerow([self.num_epoch, accu, loss, cfg['aggregation_method'], cfg['attack']])
+            writer.writerow([self.num_epoch, accu, loss, filter_time, cfg['aggregation_method'], cfg['attack']])
             
 
     def new_epoch(self):

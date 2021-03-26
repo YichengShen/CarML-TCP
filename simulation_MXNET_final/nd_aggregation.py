@@ -3,6 +3,7 @@ from mxnet import nd, autograd, gluon
 import numpy as np
 import math
 import yaml
+import time
 
 file = open('config.yml', 'r')
 cfg = yaml.load(file, Loader=yaml.FullLoader)
@@ -10,6 +11,7 @@ cfg = yaml.load(file, Loader=yaml.FullLoader)
 # np.random.seed(cfg['seed'])
 
 def simple_mean_filter(gradients, net, f, byz):
+    tic = time.perf_counter()
     # X is a 2d list of nd array
     param_list = [nd.concat(*[xx.reshape((-1, 1)) for xx in x], dim=0) for x in gradients]
     byz(param_list, f)
@@ -22,7 +24,8 @@ def simple_mean_filter(gradients, net, f, byz):
             # append to list for uploading to cloud
             grad_collect.append(mean_nd[idx:(idx+param.data().size)].reshape(param.data().shape))
             idx += param.data().size
-    return grad_collect
+    toc = time.perf_counter()
+    return grad_collect, toc-tic
 
 def multiply_norms(gradients, f):
     euclidean_distance = []
@@ -59,6 +62,8 @@ def cgc_by_layer(gradients, f):
 def cgc_filter(gradients, net, f, byz):
     """Gets rid of the largest f gradients away from the norm"""
     cgc_method = cfg['cgc_method']
+    
+    tic = time.perf_counter()
     if cgc_method == 'by-layer':
         output = cgc_by_layer(gradients, f)
     else:
@@ -76,7 +81,9 @@ def cgc_filter(gradients, net, f, byz):
             # append to list for uploading to cloud
             grad_collect.append(mean_nd[idx:(idx+param.data().size)].reshape(param.data().shape))
             idx += param.data().size
-    return grad_collect
+
+    toc = time.perf_counter()
+    return grad_collect, toc-tic
 
 # score function used by Krum
 def score(gradient, v, f):
@@ -87,6 +94,7 @@ def score(gradient, v, f):
     return nd.sum(sorted_distance[1:(1+num_neighbours)]).asscalar()
 
 def krum(gradients, net, f, byz):
+    tic = time.perf_counter()
     # X is a 2d list of nd array
     param_list = [nd.concat(*[xx.reshape((-1, 1)) for xx in x], dim=0) for x in gradients]
     byz(param_list, f)
@@ -101,9 +109,12 @@ def krum(gradients, net, f, byz):
             # mapping back to the collection of ndarray
             grad_collect.append(krum_nd[idx:(idx+param.data().size)].reshape(param.data().shape))
             idx += param.data().size
-    return grad_collect
+
+    toc = time.perf_counter()
+    return grad_collect, toc-tic
 
 def marginal_median(gradients, net, f, byz):
+    tic = time.perf_counter()
     # X is a 2d list of nd array
     # TODO: improve the implementation of median, the current one is very slow
     param_list = [nd.concat(*[xx.reshape((-1, 1)) for xx in x], dim=0) for x in gradients]
@@ -122,7 +133,9 @@ def marginal_median(gradients, net, f, byz):
             # mapping back to the collection of ndarray
             grad_collect.append(median_nd[idx:(idx+param.data().size)].reshape(param.data().shape))
             idx += param.data().size
-    return grad_collect
+
+    toc = time.perf_counter()
+    return grad_collect, toc-tic
 
 def zeno(gradients, net, loss_fun, lr, sample, rho_ratio, b, f, byz):
     # X is a 2d list of nd array

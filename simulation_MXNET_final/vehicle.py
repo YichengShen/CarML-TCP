@@ -71,13 +71,17 @@ class Vehicle:
     def upload(self, simulation, closest_rsu):
         rsu = closest_rsu
         rsu.accumulative_gradients.append(self.gradients)
+
+        time = 0
         # RSU checks if enough gradients collected
         if len(rsu.accumulative_gradients) >= cfg['simulation']['maximum_rsu_accumulative_gradients']:
-            rsu.communicate_with_central_server(simulation.central_server)
+            time = rsu.communicate_with_central_server(simulation.central_server)
+        return time
 
     def compute_and_upload(self, simulation, closest_rsu):
         self.compute(simulation, closest_rsu)
-        self.upload(simulation, closest_rsu)
+        time = self.upload(simulation, closest_rsu)
+        return time
 
 
     

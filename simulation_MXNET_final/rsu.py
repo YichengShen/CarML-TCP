@@ -49,17 +49,19 @@ class RSU:
         # Different methods of attacking
         if cfg['attack'] == 'signflip':
             byz.signflip_attack(self)
-            aggre_gradients = self.aggregate(central_server.net, self.accumulative_gradients)
+            aggre_gradients, time = self.aggregate(central_server.net, self.accumulative_gradients)
         elif cfg['attack'] == 'gaussian':
-            aggre_gradients = self.aggregate(central_server.net, self.accumulative_gradients, byz.gaussian_attack)
+            aggre_gradients, time = self.aggregate(central_server.net, self.accumulative_gradients, byz.gaussian_attack)
         elif cfg['attack'] == 'bitflip':
-            aggre_gradients = self.aggregate(central_server.net, self.accumulative_gradients, byz.bitflip_attack)
+            aggre_gradients, time = self.aggregate(central_server.net, self.accumulative_gradients, byz.bitflip_attack)
         else:
             # NO attack
-            aggre_gradients = self.aggregate(central_server.net, self.accumulative_gradients)
+            aggre_gradients, time = self.aggregate(central_server.net, self.accumulative_gradients)
             
         self.accumulative_gradients = []
         central_server.accumulative_gradients.append(aggre_gradients)
         # if enough gradients accumulated in cloud, then update model
         if len(central_server.accumulative_gradients) >= cfg['simulation']['maximum_rsu_accumulative_gradients']:
             central_server.update_model()
+
+        return time

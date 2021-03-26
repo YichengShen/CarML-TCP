@@ -1,14 +1,14 @@
 aggregation_method: median
 attack: signflip
-cgc_method: multiply
+cgc_method: by-layer
 comm_range:
   v2rsu: 100
 dataset: mnist
 neural_network:
   batch_size: 100
-  epoch: 1
+  epoch: 100
   learning_rate: 0.0005
-num_faulty_grads: 2
+num_faulty_grads: 5
 num_training_data: 50000
 num_val_loss: 5000
 seed: 0
