@@ -4,6 +4,7 @@
 FILE_ID="1TVpUvGNGLgdZBDDSGQoOIzHz4U8TgHcT"
 
 git checkout femnist_dataset
+cd leaf_version
 
 # Install gdown (for downloading data)
 pip install gdown
