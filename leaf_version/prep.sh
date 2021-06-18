@@ -3,6 +3,8 @@
 # file id of data stored on google drive
 FILE_ID="1TVpUvGNGLgdZBDDSGQoOIzHz4U8TgHcT"
 
+git checkout femnist_dataset
+
 # Install gdown (for downloading data)
 pip install gdown
 
