@@ -1,4 +1,4 @@
-# CarML-TCP
+# CRACAU
 
 ### Procedure to host code on GCP
 1. Region: us-east4 (Northern Virginia) Zone: us-east4-c    
@@ -12,8 +12,8 @@
     `sudo apt-get install tmux`   
     `sudo apt-get -y install python3-pip`      
     `sudo apt install git-all`    
-    `git clone https://github.com/YichengShen/CarML-CGC.git`   
-    `cd CarML-CGC`   
+    `git clone https://github.com/YichengShen/cracau.git`   
+    `cd cracau`   
     `pip3 install -r requirements.txt`   
     
 5. Run
